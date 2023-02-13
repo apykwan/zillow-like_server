@@ -5,7 +5,7 @@ const schema = new Schema({
         type: String,
         trim: true,
         required: true,
-        unqiue: true,
+        unique: true,
         lowercase: true
     },
     name: {

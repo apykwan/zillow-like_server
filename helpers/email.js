@@ -6,7 +6,7 @@ const style = `
     border-radius: 20px;
 `;
 
-exports.emailTemplate = (email, content, replyTo, subject) => {
+const emailTemplate = (email, content, replyTo, subject) => {
     return {
         Source: EMAIL_FROM,
         Destination: {
@@ -29,8 +29,12 @@ exports.emailTemplate = (email, content, replyTo, subject) => {
             },
             Subject: {
                 Charset: "UTF-8",
-                Data: "Welcome to Zillow-Like" 
+                Data: subject 
             }
         }
     }
-} 
+}
+
+module.exports = {
+    emailTemplate
+};
