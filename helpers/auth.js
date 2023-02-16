@@ -21,7 +21,7 @@ const verifyToken = token => jwt.verify(token, JWT_SECRET);
 
 const tokenAndUserResponse = (user, res) => {
     const token = signToken({ _id: user._id }, '1h');
-    const refreshToken = signToken({ _id: user._id }, '77d');
+    const refreshToken = signToken({ _id: user._id }, '777d');
 
     user.password = undefined;
     user.resetCode = undefined;
