@@ -97,7 +97,7 @@ const create = async (req, res) => {
         const geo = await GOOGLE_GEOCODER.geocode(address);
         const slug = slugify(`${type}-${address}-${price}-${nanoid(6)}`);
         // Add unit to landsize if not provided
-        if(/^\d+$/.test(landsize) && !landsize.includes("sqft")) landsize = `${landsize}sqft`;
+        // if(/^\d+$/.test(landsize) && !landsize.includes("sqft")) landsize = `${landsize} sqft`;
 
         const ad = await new Ad({
             photos,
@@ -106,7 +106,7 @@ const create = async (req, res) => {
             bedrooms,
             bathrooms,
             carpark,
-            landsize,
+            landsize: `${landsize} sqft`,
             title,
             description,
             type,
@@ -116,7 +116,7 @@ const create = async (req, res) => {
                 type: "Point",
                 coordinates: [geo?.[0]?.longitude, geo?.[0]?.latitude],
             },
-            googleMap: geo,
+            googleMap: geo[0],
             slug
         }).save();
 
@@ -155,7 +155,7 @@ const read = async (req, res) => {
     try {
         const ad = await Ad.findOne({ slug: req.params.slug }).populate(
             'postedBy', 
-            'name, username email phone  company photo.Location'
+            'name username email phone company photo.Location'
         );
         
         // related
@@ -163,10 +163,15 @@ const read = async (req, res) => {
             _id: {$ne: ad._id},
             action: ad.action,
             type: ad.type,
-            address: {
-                $regex: ad.googleMap[0].city,
-                $options: "i"
-            }
+            $or: [{
+                address: {
+                    $regex: ad.googleMap.city,
+                    $options: "i"}}, {
+                'googleMap.administrativeLevels.level2long': {
+                    $regex: ad.googleMap.administrativeLevels.level2long,
+                    $options: "i"
+                }
+            }]
         })
             .select('-photos.Key -photos.key -photos.ETag -photos.Bucket -googleMap')
             .limit(3);
