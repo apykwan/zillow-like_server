@@ -182,10 +182,38 @@ const read = async (req, res) => {
     }
 };
 
+const addToWishlist = async (req, res) => {
+    try {
+        const user = await User.findByIdAndUpdate(req.user._id, {
+            $addToSet: { wishlist: req.body.adId }
+        }, { new: true });
+
+        const { password, resetCode, ...rest } = user._doc;
+        res.json(rest);
+    } catch (err) {
+        console.log(err);
+    }
+};
+
+const removeFromWishlist = async (req, res) => {
+    try {
+        const user = await User.findByIdAndUpdate(req.user._id, {
+            $pull: { wishlist: req.params.adId }
+        }, { new: true });
+
+        const { password, resetCode, ...rest } = user._doc;
+        res.json(rest);
+    } catch (err) {
+        console.log(err);
+    }
+};
+
 module.exports = {
     uploadImage,
     removeImage,
     create,
     ads,
-    read
+    read,
+    addToWishlist,
+    removeFromWishlist
 };
