@@ -12,12 +12,6 @@ const {
     tokenAndUserResponse 
 } = require('../helpers/auth');
 
-const welcome =  (req, res) => {
-    res.json({
-        data: "Hello from nodejs api"
-    });
-};
-
 const preRegister = async (req, res) => {
     try {
         // Create jwt with email and password then email as clickable link
@@ -226,7 +220,18 @@ const updatePassword = async (req, res) => {
 
 const updateProfile = async (req, res) => {
     try {
-        const user = await User.findByIdAndUpdate(req.user._id, req.body, { new: true });
+        const data = {
+            username: req.body.username,
+            name: req.body.name,
+            email: req.body.email,
+            company: req.body.company,
+            address: req.body.address,
+            phone: req.body.phone,
+            about: req.body.about,
+            photo: req.body.photo
+        };
+
+        const user = await User.findByIdAndUpdate(req.user._id, data, { new: true });
         user.password = undefined;
         user.resetCode = undefined;
         res.json(user);
@@ -243,7 +248,6 @@ const updateProfile = async (req, res) => {
 }
 
 module.exports = {
-    welcome,
     preRegister,
     register, 
     login,
