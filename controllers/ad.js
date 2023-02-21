@@ -3,7 +3,8 @@ const slugify = require('slugify');
 
 const Ad = require('../models/ad');
 const User = require('../models/user');
-const { AWSS3, GOOGLE_GEOCODER } = require('../config');
+const { AWSS3, AWSSES, GOOGLE_GEOCODER, CLIENT_URL } = require('../config');
+const { emailTemplate } = require('../helpers/email');
 
 const uploadImage = async (req, res) => {
     try {
@@ -208,6 +209,77 @@ const removeFromWishlist = async (req, res) => {
     }
 };
 
+const contactSeller = async (req, res) => {
+    try {
+        const { name, email, message, phone, adId } = req.body;
+        if(!email || !message) {
+            return res.json({ error: "Email and message are required!" });
+        }
+        
+        const user = await User.findByIdAndUpdate(req.user._id, {
+            $addToSet: { enquiredProperties: adId }
+        }, { new: true });
+
+        if(!user) {
+            return res.json({ error: "Could not find user with that email." });
+        }
+
+        const ad = await Ad
+            .findById(adId)
+            .populate("postedBy", "email");
+
+        const content = ` 
+            <p>You have received a new customer enquiry.</p>
+            <h4>Customer Details</h4>
+            <p>Name: ${name}</p>
+            <p>Email: ${email}</p>
+            <p>Phone: ${phone}</p>
+            <hr />
+            <p>${message}</p>
+
+            <a href="${CLIENT_URL}/ad/${ad.slug}">${ad.type} in ${ad.address} for ${ad.action} - $${ad.price}</a>
+        `;
+        const subject = `New Enquiry received: ${ad.type} in ${ad.address} for ${ad.action}`;
+
+        AWSSES.sendEmail(
+        emailTemplate(ad.postedBy.email, content, req.user.email, subject), 
+        (err, data) => {
+            if(err) {
+                console.log(err);
+                return res.json({ ok: false });
+            } else {
+                console.log(data);
+                return res.json({ ok: true });
+            }
+        });
+
+    } catch (err) {
+        console.log(err);
+    }
+}
+
+const userAds = async (req, res) => {
+    try {
+        const perPage = 3;
+        const page = req.params.page ? req.params.page : 1;
+
+        const total = await Ad.find({ postedBy: req.user._id});
+        const ads = await Ad
+            .find({ postedBy: req.user._id })
+            .select('-photos.key -photos.Key -photos.ETag -photos.ServerSideEncryption -photos.Bucket -location -googleMap')
+            .populate('postedBy', 'name email username phone company')
+            .skip((page - 1) * perPage)
+            .limit(perPage)
+            .sort({ createdAt: -1 });
+
+        if(!total || !ads) return res.json({ error: "erro has been occured." });
+
+        res.json({ ads, total: total.length });
+    } catch (err) {
+        console.log(err);
+    }
+};
+
 module.exports = {
     uploadImage,
     removeImage,
@@ -215,5 +287,7 @@ module.exports = {
     ads,
     read,
     addToWishlist,
-    removeFromWishlist
+    removeFromWishlist,
+    contactSeller,
+    userAds
 };

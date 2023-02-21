@@ -59,7 +59,6 @@ const preRegister = async (req, res) => {
                 return res.json({ ok: true });
             }
         });
-        
     } catch (err) {
         console.log(err);
         return res.json({ error: "Something went wrong. Please try again." });
@@ -93,6 +92,10 @@ const login = async (req, res) => {
         const { email, password } = req.body;
         // find user by email
         const user = await User.findOne({ email });
+
+        if(!user) {
+            return res.json({ error: "No user found. Please register an account." });
+        }
 
         // 2. compare password
         const match = await comparePassword(password, user.password);
