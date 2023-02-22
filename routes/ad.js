@@ -16,5 +16,9 @@ router.delete("/wishlist/:adId", requireSignin, ad.removeFromWishlist);
 router.post("/contact-seller", requireSignin, ad.contactSeller);
 
 router.get("/user-ads/:page", requireSignin, ad.userAds);
+router.put("/ad/:_id", requireSignin, ad.update);
+
+router.get("/enquiried-ads", requireSignin, ad.enquiriedProperties);
+router.get("/wishlist", requireSignin, ad.wishlist);
 
 module.exports = router;

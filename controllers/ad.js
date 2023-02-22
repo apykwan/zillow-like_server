@@ -75,26 +75,14 @@ const create = async (req, res) => {
             carpark, 
         } = req.body;
 
-        if(!photos?.length) {
-            return res.json({ error: 'At least a photo is required.' });
-        }
+        // Vallidation
+        if(!photos?.length)  return res.json({ error: 'At least a photo is required.' });
+        if(!price) return res.json({ error: 'Price is required.' });
+        if(!type) return res.json({ error: 'Is property house or land?' });
+        if(!address) return res.json({ error: 'Address is required.' });
+        if(!title) return res.json({ error: 'Title is required.' });
+        if(!description) return res.json({ error: 'Description is required.' });
 
-        if(!price) {
-            return res.json({ error: 'Price is required.' });
-        }
-
-        if(!type) {
-            return res.json({ error: 'Is property house or land?' });
-        }
-
-        if(!address) {
-            return res.json({ error: 'Address is required.' });
-        }
-
-        if(!description) {
-            return res.json({ error: 'Description is required.' });
-        }
-   
         const geo = await GOOGLE_GEOCODER.geocode(address);
         const slug = slugify(`${type}-${address}-${price}-${nanoid(6)}`);
         // Add unit to landsize if not provided
@@ -280,6 +268,76 @@ const userAds = async (req, res) => {
     }
 };
 
+const update = async (req, res) => {
+    try {
+        let { photos, price, type, address, description, title, landsize } = req.body;
+        const ad = await Ad.findById(req.params._id);
+
+        const owner = req.user._id == ad?.postedBy;
+        if (!owner) return res.json({ error: "Permission denied."});
+        
+        // Vallidation
+        if(!photos?.length)  return res.json({ error: 'At least a photo is required.' });
+        if(!price) return res.json({ error: 'Price is required.' });
+        if(!type) return res.json({ error: 'Is property house or land?' });
+        if(!address) return res.json({ error: 'Address is required.' });
+        if(!title) return res.json({ error: 'Title is required.' });
+        if(!description) return res.json({ error: 'Description is required.' });
+
+        const geo = await GOOGLE_GEOCODER.geocode(address);
+        if(/^\d+$/.test(landsize) && !landsize.includes("sqft")) landsize = `${landsize} sqft`;
+
+        await ad.update({
+            photos,
+            price,
+            type,
+            address,
+            title,
+            landsize,
+            description,
+            slug: ad.slug,
+            location: {
+                type: "Point",
+                coordinates: [geo?.[0]?.longitude, geo?.[0]?.latitude],
+            },
+            googleMap: geo[0],
+            bedrooms: req.body.bedrooms ? req.body.bedrooms : ad.bedrooms,
+            bathrooms: req.body.bathrooms ? req.body.bathrooms : ad.bathrooms,
+            carpark: req.body.carpark ? req.body.carpark : ad.carpark
+        });
+        res.json({ ok: true });
+    } catch (err) {
+        res.json({ ok: false });
+        console.log(err);
+    }
+};
+
+const enquiriedProperties = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        const ads = await Ad
+            .find({ _id: user.enquiredProperties })
+            .sort({ createdAt: -1 });
+
+        res.json(ads);
+    } catch (err) {
+        console.log(err);
+    }
+};
+
+const wishlist = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        const ads = await Ad
+            .find({ _id: user.wishlist })
+            .sort({ createdAt: -1 });
+
+        res.json(ads);
+    } catch (err) {
+        console.log(err);
+    }
+};
+
 module.exports = {
     uploadImage,
     removeImage,
@@ -289,5 +347,8 @@ module.exports = {
     addToWishlist,
     removeFromWishlist,
     contactSeller,
-    userAds
+    userAds,
+    update,
+    enquiriedProperties,
+    wishlist
 };
