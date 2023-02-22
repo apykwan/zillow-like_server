@@ -2,6 +2,7 @@ const { nanoid } = require("nanoid");
 const validator = require('email-validator');
 
 const User = require('../models/user');
+const Ad = require('../models/ad.js');
 const { AWSSES, REPLY_TO, CLIENT_URL } = require('../config');
 const { emailTemplate } = require('../helpers/email');
 const { 
@@ -250,6 +251,48 @@ const updateProfile = async (req, res) => {
     }
 }
 
+const agents = async (req, res) => {
+    try {
+        const agents = await User
+            .find({ role: 'Seller' })
+            .select('-psasword -role -resetCode -enquiredProperties -wishList -photo.Key -photo.key -photo.ETag -photo.Bucket -photo.ServerSideEncryption');
+        res.json(agents);
+    } catch (err) {
+        console.log(err);
+        res.json({ error: "Something went wrong. Please try again." });
+    }
+};
+
+const agentAdCount = async (req, res) => {
+    try {
+        const ads = await Ad
+            .find({ postedBy: req.params.agentId })
+            .select("_id");
+
+        res.json(ads);
+    } catch (err) {
+        console.log(err);
+        res.json({ error: "Something went wrong. Please try again." });
+    }
+};
+
+const agent = async (req, res) => {
+    try {
+        const agent = await User
+            .findOne({ username: req.params.username, role: 'Seller' })
+            .select('-password -role -resetCode -enquiredProperties -wishList -photo.Key -photo.key -photo.ETag -photo.Bucket -photo.ServerSideEncryption');
+
+        const ads = await Ad
+            .find({ postedBy: agent._id })
+            .select("-photos.key -photos.Key -photos.ETag -photos.ServerSideEncryption -photos.Bucket -location -googleMap"); 
+            
+        res.json({ agent, ads});
+    } catch (err) {
+        console.log(err);
+        res.json({ error: "Something went wrong. Please try again." });
+    }
+};
+
 module.exports = {
     preRegister,
     register, 
@@ -260,5 +303,8 @@ module.exports = {
     currentUser,
     publicProfile,
     updatePassword,
-    updateProfile
+    updateProfile,
+    agents,
+    agentAdCount,
+    agent
 };

@@ -173,6 +173,9 @@ const read = async (req, res) => {
 
 const addToWishlist = async (req, res) => {
     try {
+        if(req.user._id === req.body.adId) 
+            return res.json({ error: "You cannot like your own post!" });
+
         const user = await User.findByIdAndUpdate(req.user._id, {
             $addToSet: { wishlist: req.body.adId }
         }, { new: true });
@@ -338,6 +341,31 @@ const wishlist = async (req, res) => {
     }
 };
 
+const remove = async (req, res) => {
+    try {
+        const ad = await Ad.findById(req.params._id);
+        const owner = req.user._id == ad?.postedBy;
+        if (!owner) return res.json({ error: "Permission denied."});
+
+        // Remove photos from AWS S3
+        ad.photos.forEach(function(photo) {
+            AWSS3.deleteObject({ Bucket: photo.Bucket, Key: photo.Key }, (err, data) => {
+                if(err) {
+                    console.log(err);
+                    return res.statu(400).json({ error: "Failed to remove photos from AWS S3." });
+                }
+            });
+        })
+
+        // Remove the ad
+        await Ad.findByIdAndRemove(ad._id);
+        res.json({ ok: true });
+    } catch (err) {
+        res.json({ ok: false });
+        console.log(err);
+    }
+};
+
 module.exports = {
     uploadImage,
     removeImage,
@@ -350,5 +378,6 @@ module.exports = {
     userAds,
     update,
     enquiriedProperties,
-    wishlist
+    wishlist,
+    remove
 };
