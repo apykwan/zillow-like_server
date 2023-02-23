@@ -366,6 +366,35 @@ const remove = async (req, res) => {
     }
 };
 
+const adsForSell = async (req, res) => {
+    try {
+        const ads = await Ad
+            .find({ action: "Sell" })
+            .select('-googleMap -location')
+            .sort({ createdAt: -1 })
+            .limit(12);
+
+        console.log(ads);
+        res.json(ads);
+    } catch (err) {
+        console.log(err);
+    }
+};
+
+const adsForRent = async (req, res) => {
+    try {
+        const ads = await Ad
+            .find({ action: "Rent" })
+            .select('-googleMap -location')
+            .sort({ createdAt: -1 })
+            .limit(12);
+
+        res.json(ads);
+    } catch (err) {
+        console.log(err);
+    }
+};
+
 module.exports = {
     uploadImage,
     removeImage,
@@ -379,5 +408,7 @@ module.exports = {
     update,
     enquiriedProperties,
     wishlist,
-    remove
+    remove,
+    adsForSell,
+    adsForRent
 };
