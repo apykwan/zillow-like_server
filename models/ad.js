@@ -60,4 +60,6 @@ const schema = new Schema({
     timestamps: true
 });
 
+schema.index({ location: "2dsphere" });
+
 module.exports = model("Ad", schema);
